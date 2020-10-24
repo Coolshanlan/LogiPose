@@ -4,7 +4,35 @@ import cv2
 import socket
 import numpy as np
 import _pickle as pickle
-import threading
+from threading import Thread 
+from wx.lib.pubsub import pub as Publisher
+
+class SocketThread(Thread): 
+    """Test Worker Thread Class."""
+        
+    def __init__(self): 
+        """Init Worker Thread Class."""
+        Thread.__init__(self)     
+        self.addr = ("localhost", 6000)
+        
+    def run(self): 
+        """Run Worker Thread."""
+        # This is the code executing in the new thread. 
+        clientMessage = "ABCDEFG"
+
+        while clientMessage:
+            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            client.connect(self.addr)
+            client.sendall(clientMessage.encode())        
+
+            serverMessage = str(client.recv(1024), encoding='utf-8')
+            print('Server:', serverMessage)
+            client.close()
+            
+            Publisher.sendMessage, "update", serverMessage
+
+        
 
 class ShowCapture(wx.Panel): 
     def __init__(self, parent, capture, fps=30): 
@@ -28,14 +56,11 @@ class ShowCapture(wx.Panel):
             self.Bind(wx.EVT_TIMER, self.NextFrame) 
             self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnErase)
 
-        self.Bind(wx.EVT_CLOSE,self.OnClose)
-        self.Bind(self.Socket)
-
-        self.addr = ("localhost", 6000)
-
-    def OnClose(self,event):
-        self.thread.terminate()
-        self.Destroy()
+        self.thread = SocketThread()
+        self.thread.setDaemon(True)
+        self.thread.start()
+        
+        Publisher.subscribe(lambda self, msg: print(msg), "update")
 
     def OnErase(self, event):
         # Do nothing, reduces flicker by removing
@@ -52,27 +77,13 @@ class ShowCapture(wx.Panel):
             self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB) 
             self.bmp.CopyFromBuffer(self.frame) 
             self.Refresh()
-
-    def Socket(self):
-        clientMessage = "ABCDEFG"
-        print(type(self.frame))
-
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        client.connect(self.addr)
-
-        client.sendall(clientMessage.encode())        
-
-        serverMessage = str(client.recv(1024), encoding='utf-8')
-        print('Server:', serverMessage)
-
-        client.close()
+        
 
 if __name__ == '__main__':
     capture = None
-    capture = cv2.VideoCapture(2) 
-    capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280) 
-    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720) 
+    # capture = cv2.VideoCapture(2) 
+    # capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280) 
+    # capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720) 
 
     app = wx.App() 
     frame = wx.Frame(None) 

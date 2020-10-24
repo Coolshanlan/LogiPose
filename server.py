@@ -4,34 +4,66 @@ import cv2
 import socket
 import numpy as np
 import _pickle as pickle
-import threading
+from threading import Thread 
+from wx.lib.pubsub import pub as Publisher
+
+class SocketThread(Thread): 
+    """Test Worker Thread Class."""
+        
+    def __init__(self): 
+        """Init Worker Thread Class."""
+        Thread.__init__(self)     
+        self.addr = ("localhost", 6000)
+        
+    def run(self): 
+        """Run Worker Thread."""
+        # This is the code executing in the new thread. 
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        server.bind(self.addr)
+        server.listen(10)
+
+        while True:
+            conn, addr = server.accept()
+            clientMessage = str(conn.recv(1024), encoding='utf-8')
+
+            print('Client message is:', clientMessage)
+
+            serverMessage = 'I\'m here!'
+            conn.sendall(serverMessage.encode())
+
+            Publisher.sendMessage, "update", clientMessage
+
+        conn.close()
+    
 
 class ShowCapture(wx.Panel): 
     def __init__(self, parent, capture, fps=30): 
         wx.Panel.__init__(self, parent) 
 
-        if capture:
-            self.capture = capture 
-            ret, frame = self.capture.read() 
+        self.capture = capture 
+        ret, frame = self.capture.read() 
 
-            height, width = frame.shape[:2] 
-            parent.SetSize((width, height)) 
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+        height, width = frame.shape[:2] 
+        parent.SetSize((width, height)) 
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
 
-            self.bmp = wx.Bitmap.FromBuffer(width, height, frame) 
+        self.bmp = wx.Bitmap.FromBuffer(width, height, frame) 
 
-            self.timer = wx.Timer(self) 
-            self.timer.Start(1000./fps)
+        self.timer = wx.Timer(self) 
+        self.timer.Start(1000./fps)
 
-            self.Bind(wx.EVT_PAINT, self.OnPaint) 
-            self.Bind(wx.EVT_TIMER, self.NextFrame) 
-            self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnErase)
+        self.Bind(wx.EVT_PAINT, self.OnPaint) 
+        self.Bind(wx.EVT_TIMER, self.NextFrame) 
+        self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnErase)
 
-        self.Bind(wx.EVT_CLOSE,self.OnClose)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-        self.addr = ("localhost", 6000)
-        self.thread = threading.Thread(target=self.Socket)
+        self.thread = SocketThread()
+        self.thread.setDaemon(True)
         self.thread.start()
+        
+        Publisher.subscribe(lambda self, msg: print(msg), "update")
 
     def OnClose(self,event):
         self.thread.terminate()
@@ -53,27 +85,11 @@ class ShowCapture(wx.Panel):
             self.bmp.CopyFromBuffer(frame) 
             self.Refresh()
 
-    def Socket(self):
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        server.bind(self.addr)
-        server.listen(10)
-        
-        while True:
-            conn, addr = server.accept()
-            clientMessage = str(conn.recv(1024), encoding='utf-8')
-
-            print('Client message is:', clientMessage)
-
-            serverMessage = 'I\'m here!'
-            conn.sendall(serverMessage.encode())
-            conn.close()
-
-if __name__ == '__main__':
+if __name__ == '__main__':    
     capture = None
-    # capture = cv2.VideoCapture(2) 
-    # capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280) 
-    # capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720) 
+    capture = cv2.VideoCapture(2) 
+    capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280) 
+    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720) 
 
     app = wx.App() 
     frame = wx.Frame(None) 
