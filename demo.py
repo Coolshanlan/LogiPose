@@ -119,8 +119,8 @@ def run_demo(net, image_provider, height_size, cpu, track, smooth):
         for pose in current_poses:
             pose.draw(img)
         img = cv2.addWeighted(orig_img, 0.6, img, 0.4, 0)
-        for poseindex in range(len(current_poses)-1):
-            print(get_similarity(current_poses[poseindex],current_poses[poseindex+1]))
+        for poseindex in range(len(current_poses)):
+            print(get_similarity(current_poses[0],current_poses[poseindex]))
 
         for pose in current_poses:
             cv2.rectangle(img, (pose.bbox[0], pose.bbox[1]),
@@ -129,7 +129,7 @@ def run_demo(net, image_provider, height_size, cpu, track, smooth):
                 cv2.putText(img, 'id: {}'.format(pose.id), (pose.bbox[0], pose.bbox[1] - 16),
                             cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255))
         cv2.imshow('Lightweight Human Pose Estimation Python Demo', img)
-        key = cv2.waitKey(3000)
+        key = cv2.waitKey(1)
         if key == 27:  # esc
             return
         elif key == 112:  # 'p'
@@ -146,7 +146,7 @@ if __name__ == '__main__':
                        Please, consider c++ demo for the best performance.''')
     parser.add_argument('--checkpoint-path', default = 'checkpoint\checkpoint_iter_370000.pth',type=str, required=False, help='path to the checkpoint')
     parser.add_argument('--height-size', type=int, default=256, help='network input layer height size')
-    parser.add_argument('--video', type=str, default='', help='path to video file or camera id')
+    parser.add_argument('--video', type=str, default='2', help='path to video file or camera id')
     parser.add_argument('--images', nargs='+', default='', help='path to input image(s)')
     parser.add_argument('--cpu', action='store_true', help='run network inference on cpu')
     parser.add_argument('--track', type=int, default=1, help='track pose id in video')

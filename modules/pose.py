@@ -61,8 +61,7 @@ class Pose:
             if global_kpt_a_id != -1 and global_kpt_b_id != -1:
                 cv2.line(img, (int(x_a), int(y_a)), (int(x_b), int(y_b)), Pose.color, 2)
 
-
-def get_similarity(a, b, threshold=0.3):
+def get_similarity_score(a, b, threshold=0.3):
     num_similar_kpt = 0
     similarity_score=0
     for kpt_id in range(Pose.num_kpts):
@@ -72,10 +71,20 @@ def get_similarity(a, b, threshold=0.3):
             distance = np.sum((apoint - bpoint) ** 2)
             area = max(a.bbox[2] * a.bbox[3], b.bbox[2] * b.bbox[3])
             similarity = np.exp(-distance / (2 * (area + np.spacing(1)) * Pose.vars[kpt_id]))
-            similarity_score+= similarity if similarity<threshold else 1
+            similarity_score+= 1 if similarity>threshold else similarity
             if similarity > threshold:
                 num_similar_kpt += 1
-    return num_similar_kpt,similarity_score/Pose.num_kpts
+    return num_similar_kpt,similarity_score
+def get_similarity(a, b, threshold=0.5):
+    num_similar_kpt = 0
+    for kpt_id in range(Pose.num_kpts):
+        if a.keypoints[kpt_id, 0] != -1 and b.keypoints[kpt_id, 0] != -1:
+            distance = np.sum((a.keypoints[kpt_id] - b.keypoints[kpt_id]) ** 2)
+            area = max(a.bbox[2] * a.bbox[3], b.bbox[2] * b.bbox[3])
+            similarity = np.exp(-distance / (2 * (area + np.spacing(1)) * Pose.vars[kpt_id]))
+            if similarity > threshold:
+                num_similar_kpt += 1
+    return num_similar_kpt
 
 
 def track_poses(previous_poses, current_poses, threshold=3, smooth=False):
