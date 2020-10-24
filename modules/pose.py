@@ -125,7 +125,7 @@ def get_similarity_score(a, b, threshold=0.6):
             similarity_score+= 1 if similarity>threshold else similarity
             if similarity > threshold:
                 num_similar_kpt += 1
-    return num_similar_kpt,similarity_score/validpoint,minscore
+    return num_similar_kpt,(similarity_score/validpoint)*100,minscore*100
 def get_similarity(a, b, threshold=0.5):
     num_similar_kpt = 0
     for kpt_id in range(Pose.num_kpts):
