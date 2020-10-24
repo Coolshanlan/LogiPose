@@ -62,7 +62,7 @@ class Pose:
                 cv2.line(img, (int(x_a), int(y_a)), (int(x_b), int(y_b)), Pose.color, 2)
 
 
-def get_similarity(a, b, threshold=0.5):
+def get_similarity(a, b, threshold=0.3):
     num_similar_kpt = 0
     similarity_score=0
     for kpt_id in range(Pose.num_kpts):
@@ -72,7 +72,7 @@ def get_similarity(a, b, threshold=0.5):
             distance = np.sum((apoint - bpoint) ** 2)
             area = max(a.bbox[2] * a.bbox[3], b.bbox[2] * b.bbox[3])
             similarity = np.exp(-distance / (2 * (area + np.spacing(1)) * Pose.vars[kpt_id]))
-            similarity_score+= similarity
+            similarity_score+= similarity if similarity<threshold else 1
             if similarity > threshold:
                 num_similar_kpt += 1
     return num_similar_kpt,similarity_score/Pose.num_kpts
