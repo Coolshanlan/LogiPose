@@ -12,7 +12,6 @@ class ShowCapture(wx.Panel):
 
         if capture:
             self.capture = capture 
-            self.frame = None
             ret, frame = self.capture.read() 
 
             height, width = frame.shape[:2] 
@@ -29,9 +28,10 @@ class ShowCapture(wx.Panel):
             self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnErase)
 
         self.Bind(wx.EVT_CLOSE,self.OnClose)
-        self.Bind(self.Socket)
 
         self.addr = ("localhost", 6000)
+        self.thread = threading.Thread(target=self.Socket)
+        self.thread.start()
 
     def OnClose(self,event):
         self.thread.terminate()
@@ -47,32 +47,33 @@ class ShowCapture(wx.Panel):
         dc.DrawBitmap(self.bmp, 0, 0) 
 
     def NextFrame(self, event): 
-        ret, self.frame = self.capture.read() 
+        ret, frame = self.capture.read() 
         if ret: 
-            self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB) 
-            self.bmp.CopyFromBuffer(self.frame) 
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+            self.bmp.CopyFromBuffer(frame) 
             self.Refresh()
 
     def Socket(self):
-        clientMessage = "ABCDEFG"
-        print(type(self.frame))
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        server.bind(self.addr)
+        server.listen(10)
+        
+        while True:
+            conn, addr = server.accept()
+            clientMessage = str(conn.recv(1024), encoding='utf-8')
 
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        client.connect(self.addr)
+            print('Client message is:', clientMessage)
 
-        client.sendall(clientMessage.encode())        
-
-        serverMessage = str(client.recv(1024), encoding='utf-8')
-        print('Server:', serverMessage)
-
-        client.close()
+            serverMessage = 'I\'m here!'
+            conn.sendall(serverMessage.encode())
+            conn.close()
 
 if __name__ == '__main__':
     capture = None
-    capture = cv2.VideoCapture(2) 
-    capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280) 
-    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720) 
+    # capture = cv2.VideoCapture(2) 
+    # capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280) 
+    # capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720) 
 
     app = wx.App() 
     frame = wx.Frame(None) 
