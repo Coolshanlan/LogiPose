@@ -60,12 +60,23 @@ class Pose:
                 cv2.circle(img, (int(x_b), int(y_b)), 3, Pose.color, -1)
             if global_kpt_a_id != -1 and global_kpt_b_id != -1:
                 cv2.line(img, (int(x_a), int(y_a)), (int(x_b), int(y_b)), Pose.color, 2)
+def get_max_human(humanposes):
+  maxarea = 0
+  maxindex= 0
+  for index , pose in enumerate(humanposes):
+    area = pose.bbox[2] * pose.bbox[3]
+    if area > maxarea:
+      maxarea = area
+      maxindex = index
+  return humanposes[maxindex]
 
 def get_similarity_score(a, b, threshold=0.3):
     num_similar_kpt = 0
     similarity_score=0
+    validpoint=0
     for kpt_id in range(Pose.num_kpts):
         if a.keypoints[kpt_id, 0] != -1 and b.keypoints[kpt_id, 0] != -1:
+            validpoint+=1
             apoint = np.array([a.keypoints[kpt_id][0]-a.bbox[0] , a.keypoints[kpt_id][1]-a.bbox[1]])
             bpoint = np.array([b.keypoints[kpt_id][0]-b.bbox[0] , b.keypoints[kpt_id][1]-b.bbox[1]])
             distance = np.sum((apoint - bpoint) ** 2)
@@ -74,7 +85,7 @@ def get_similarity_score(a, b, threshold=0.3):
             similarity_score+= 1 if similarity>threshold else similarity
             if similarity > threshold:
                 num_similar_kpt += 1
-    return num_similar_kpt,similarity_score
+    return num_similar_kpt,similarity_score/validpoint
 def get_similarity(a, b, threshold=0.5):
     num_similar_kpt = 0
     for kpt_id in range(Pose.num_kpts):

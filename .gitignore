@@ -1,4 +1,6 @@
-.vscdoe
+.vscdoe\
 .gitignore
 *.pyc
-__pycache__
+__pycache__\
+test.py
+tempCodeRunnerFile.py

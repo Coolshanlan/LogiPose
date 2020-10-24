@@ -7,7 +7,7 @@ import torch
 from models.with_mobilenet import PoseEstimationWithMobileNet
 from modules.keypoints import extract_keypoints, group_keypoints
 from modules.load_state import load_state
-from modules.pose import Pose, track_poses,get_similarity,get_similarity_score
+from modules.pose import Pose, track_poses,get_similarity,get_similarity_score,get_max_human
 from val import normalize, pad_width
 
 
