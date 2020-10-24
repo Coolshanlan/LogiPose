@@ -92,8 +92,9 @@ class ShowCapture(wx.Panel):
         self.moveerror = 50
         self.teachermod = teachermod
         if not teachermod:
+            self.Backpanelred = wx.Panel(parent)
             self.Backpanel = wx.Panel(parent)
-            # self.Backpanelgreen = wx.Panel(parent)
+            self.Backpanelred.SetBackgroundColour('red')
         ret, frame = self.capture.read()
         mag_X = self.Size[0]/frame.shape[1]
         mag_Y = self.Size[1]/frame.shape[0]
@@ -128,18 +129,21 @@ class ShowCapture(wx.Panel):
     def changebackcolor(self, mode):
         if mode == 1:
             self.Backpanel.SetBackgroundColour("green")
+            self.Refresh()
+            self.Backpanel.Show()
+            self.Backpanel.Layout()
         else:
             self.Backpanel.SetBackgroundColour("red")
-        self.Backpanel.Hide()
-        self.Backpanel.Layout()
-        self.Backpanel.Refresh()
+            self.Backpanel.Hide()
+            self.Backpanel.Layout()
+        # self.Backpanel.Refresh()
 
-        self.Layout()
-        self.Backpanel.Layout()
-        self.Refresh()
-        self.Backpanel.Show()
-        self.Backpanel.Layout()
-        self.Layout()
+        # self.Layout()
+        # self.Backpanel.Layout()
+        # self.Refresh()
+        # self.Backpanel.Show()
+        # self.Backpanel.Layout()
+        # self.Layout()
 
     def getPose(self, height_size=256, stride=8, upsample_ratio=4, num_keypoints=18):
         heatmaps, pafs, scale, pad = infer_fast(
@@ -181,6 +185,8 @@ class ShowCapture(wx.Panel):
             self.SetSize(size)
             self.Backpanel.SetSize(
                 wx.Size(size[0]+self.Linewidth*2, size[1]+self.Linewidth*2))
+            self.Backpanelred.SetSize(
+                wx.Size(size[0]+self.Linewidth*2, size[1]+self.Linewidth*2))
         else:
             self.SetSize(size)
 
@@ -189,6 +195,8 @@ class ShowCapture(wx.Panel):
             self.SetPosition(
                 wx.Point(position[0]-self.Linewidth, position[1]-self.Linewidth))
             self.Backpanel.SetPosition(
+                wx.Point(position[0]-self.Linewidth*2, position[1]-self.Linewidth*2))
+            self.Backpanelred.SetPosition(
                 wx.Point(position[0]-self.Linewidth*2, position[1]-self.Linewidth*2))
         else:
             self.SetPosition(position)
@@ -217,8 +225,8 @@ class ShowCapture(wx.Panel):
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             mag_X = self.Size[0]/frame.shape[1]
             mag_Y = self.Size[1]/frame.shape[0]
-            frame = cv2.resize(frame, None, fx=mag_X, fy=mag_Y)
             self.frametmp = frame
+            frame = cv2.resize(frame, None, fx=mag_X, fy=mag_Y)
             self.bmp = wx.Bitmap.FromBuffer(
                 frame.shape[1], frame.shape[0], frame)
             # self.bmp.CopyFromBuffer(frame)
@@ -226,7 +234,7 @@ class ShowCapture(wx.Panel):
             self.Refresh()
 
 
-def caculate_pose(threshold=30):
+def caculate_pose(threshold=25):
     while(True):
         mainstudentcap.getPose()
         secondstudentcap.getPose()
