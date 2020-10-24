@@ -7,7 +7,7 @@ import torch
 from models.with_mobilenet import PoseEstimationWithMobileNet
 from modules.keypoints import extract_keypoints, group_keypoints
 from modules.load_state import load_state
-from modules.pose import Pose, track_poses,get_similarity
+from modules.pose import Pose, track_poses,get_similarity,get_similarity_score
 from val import normalize, pad_width
 
 
@@ -120,7 +120,7 @@ def run_demo(net, image_provider, height_size, cpu, track, smooth):
             pose.draw(img)
         img = cv2.addWeighted(orig_img, 0.6, img, 0.4, 0)
         for poseindex in range(len(current_poses)):
-            print(get_similarity(current_poses[0],current_poses[poseindex]))
+            print(get_similarity_score(current_poses[0],current_poses[poseindex]))
 
         for pose in current_poses:
             cv2.rectangle(img, (pose.bbox[0], pose.bbox[1]),
@@ -152,7 +152,6 @@ if __name__ == '__main__':
     parser.add_argument('--track', type=int, default=1, help='track pose id in video')
     parser.add_argument('--smooth', type=int, default=1, help='smooth pose keypoints')
     args = parser.parse_args()
-    args.images = ['data/sport.jpg']
     if args.video == '' and args.images == '':
         raise ValueError('Either --video or --image has to be provided')
 
