@@ -119,8 +119,6 @@ def run_demo(net, image_provider, height_size, cpu, track, smooth):
         for pose in current_poses:
             pose.draw(img)
         img = cv2.addWeighted(orig_img, 0.6, img, 0.4, 0)
-        for poseindex in range(len(current_poses)):
-            print(get_similarity_score(current_poses[0],current_poses[poseindex]))
 
         for pose in current_poses:
             cv2.rectangle(img, (pose.bbox[0], pose.bbox[1]),
