@@ -70,22 +70,62 @@ def get_max_human(humanposes):
       maxindex = index
   return humanposes[maxindex]
 
-def get_similarity_score(a, b, threshold=0.3):
+def get_similarity_score(a, b, threshold=0.6):
     num_similar_kpt = 0
     similarity_score=0
     validpoint=0
+    apoint = np.array(a.keypoints)
+    bpoint = np.array(b.keypoints)
+    for kpt_id in range(Pose.num_kpts):
+        if a.keypoints[kpt_id, 0] != -1 and b.keypoints[kpt_id, 0] != -1:
+            apoint[kpt_id] = np.array([a.keypoints[kpt_id][0]-a.bbox[0] , a.keypoints[kpt_id][1]-a.bbox[1]])
+            bpoint[kpt_id] = np.array([b.keypoints[kpt_id][0]-b.bbox[0] , b.keypoints[kpt_id][1]-b.bbox[1]])
+    # abbox=list(a.bbox)
+    # bbbox=list(b.bbox)
+    if a.bbox[2]>b.bbox[2]:
+        ratio = a.bbox[2]/b.bbox[2]
+        # bbbox[0] = b.bbox[0]*ratio
+        for kpt_id in range(Pose.num_kpts):
+            if b.keypoints[kpt_id, 0] != -1:
+                bpoint[kpt_id][0] = bpoint[kpt_id][0]*ratio
+    else:
+        ratio = b.bbox[2]/a.bbox[2]
+        # abbox[0] = a.bbox[0]*ratio
+        for kpt_id in range(Pose.num_kpts):
+            if a.keypoints[kpt_id, 0] != -1:
+                apoint[kpt_id][0] = apoint[kpt_id][0]*ratio
+    if a.bbox[3]>b.bbox[3]:
+        ratio = a.bbox[3]/b.bbox[3]
+        # bbbox[1] = b.bbox[1]*ratio
+        for kpt_id in range(Pose.num_kpts):
+            if b.keypoints[kpt_id, 1] != -1:
+                bpoint[kpt_id][1] = bpoint[kpt_id][1]*ratio
+    else:
+        ratio = b.bbox[3]/a.bbox[3]
+        # abbox[1] = a.bbox[1]*ratio
+        for kpt_id in range(Pose.num_kpts):
+            if a.keypoints[kpt_id, 1] != -1:
+                apoint[kpt_id][1] = apoint[kpt_id][1]*ratio
+
+    max_x = max(a.bbox[2] , b.bbox[2])
+    max_y = max(a.bbox[3],b.bbox[3])
+    area =max_x*max_y
+    minscore = 2
     for kpt_id in range(Pose.num_kpts):
         if a.keypoints[kpt_id, 0] != -1 and b.keypoints[kpt_id, 0] != -1:
             validpoint+=1
-            apoint = np.array([a.keypoints[kpt_id][0]-a.bbox[0] , a.keypoints[kpt_id][1]-a.bbox[1]])
-            bpoint = np.array([b.keypoints[kpt_id][0]-b.bbox[0] , b.keypoints[kpt_id][1]-b.bbox[1]])
-            distance = np.sum((apoint - bpoint) ** 2)
-            area = max(a.bbox[2] * a.bbox[3], b.bbox[2] * b.bbox[3])
+
+            # apoint = np.array([a.keypoints[kpt_id][0]-abbox[0] , a.keypoints[kpt_id][1]-abbox[1]])
+            # bpoint = np.array([b.keypoints[kpt_id][0]-bbbox[0] , b.keypoints[kpt_id][1]-bbbox[1]])
+            distance = np.sum((apoint[kpt_id] - bpoint[kpt_id]) ** 2)
+            # area = max(a.bbox[2] * a.bbox[3], b.bbox[2] * b.bbox[3])
             similarity = np.exp(-distance / (2 * (area + np.spacing(1)) * Pose.vars[kpt_id]))
+            if minscore >  similarity:
+                minscore = similarity
             similarity_score+= 1 if similarity>threshold else similarity
             if similarity > threshold:
                 num_similar_kpt += 1
-    return num_similar_kpt,similarity_score/validpoint
+    return num_similar_kpt,similarity_score/validpoint,minscore
 def get_similarity(a, b, threshold=0.5):
     num_similar_kpt = 0
     for kpt_id in range(Pose.num_kpts):
