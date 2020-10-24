@@ -7,6 +7,17 @@ import _pickle as pickle
 from threading import Thread
 from wx.lib.pubsub import pub as Publisher
 import ctypes
+
+import cv2
+import numpy as np
+import torch
+
+from models.with_mobilenet import PoseEstimationWithMobileNet
+from modules.keypoints import extract_keypoints, group_keypoints
+from modules.load_state import load_state
+from modules.pose import Pose, track_poses, get_similarity, get_similarity_score, get_max_human
+from val import normalize, pad_width
+
 user32 = ctypes.windll.user32
 
 
@@ -44,7 +55,7 @@ class ShowCapture(wx.Panel):
     def __init__(self, parent, capture, teachermod=0, fps=30):
         wx.Panel.__init__(self, parent)
         self.capture = capture
-        self.Linewidth = 5
+        self.Linewidth = 3
         self.moveerror = 50
         self.teachermod = teachermod
         if not teachermod:
@@ -115,6 +126,7 @@ class ShowCapture(wx.Panel):
         dc = wx.BufferedPaintDC(self)
 
         dc.DrawBitmap(self.bmp, 0, 0)
+        self.Layout()
 
     def Gettailposition(self):
         return wx.Point(self.Position[0]+self.Size[0]+self.Linewidth*2, 0)
@@ -141,22 +153,22 @@ if __name__ == '__main__':
     screen_width = user32.GetSystemMetrics(0)
     screen_height = user32.GetSystemMetrics(1)
 
-    capture2 = cv2.VideoCapture(2)
-    capture2.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    capture2.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    # capture2 = cv2.VideoCapture(2)
+    # capture2.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    # capture2.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-    capture3 = cv2.VideoCapture(3)
-    capture3.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    capture3.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    # capture3 = cv2.VideoCapture(3)
+    # capture3.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    # capture3.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
     app = wx.App()
     frame = wx.Frame(None)
-    frame.SetBackgroundColour('white')
+    frame.SetBackgroundColour((255, 250, 240))
     frame.Maximize(True)
     teachercap = ShowCapture(frame, capture, teachermod=1)
     mainstudentcap = ShowCapture(frame, capture)
-    secondstudentcap = ShowCapture(frame, capture2)
-    thirdstudentcap = ShowCapture(frame, capture3)
+    secondstudentcap = ShowCapture(frame, capture)
+    thirdstudentcap = ShowCapture(frame, capture)
 
     frame.Show()
     socketthread = SocketThread()
@@ -168,11 +180,11 @@ if __name__ == '__main__':
     mainstudentcap.setsize(wx.Size((1280//1.8, 720//1.9)))
     mainstudentcap.setposition(
         wx.Point(0+mainstudentcap.Linewidth*2, screen_height-mainstudentcap.Size[1]-22))
-    secondstudentcap.setsize(wx.Size((1280//3.2, 720//2.6)))
+    secondstudentcap.setsize(wx.Size((1280//3.65, 720//2.7)))
     secondstudentcap.setposition(
-        wx.Point(0+mainstudentcap.Linewidth*2, 0+mainstudentcap.Linewidth*2))
-    thirdstudentcap.setsize(wx.Size((1280//3.2, 720//2.6)))
+        wx.Point(0+mainstudentcap.Linewidth*2, 0+mainstudentcap.Linewidth*2+15))
+    thirdstudentcap.setsize(wx.Size((1280//3.65, 720//2.7)))
     thirdstudentcap.setposition(
-        wx.Point(0+mainstudentcap.Linewidth*2+secondstudentcap.Gettailposition()[0], 0+mainstudentcap.Linewidth*2+secondstudentcap.Gettailposition()[1]))
-
+        wx.Point(0+mainstudentcap.Linewidth*2+secondstudentcap.Gettailposition()[0], 0+mainstudentcap.Linewidth*2+secondstudentcap.Gettailposition()[1]+15))
+    thirdstudentcap.changebackcolor(0)
 app.MainLoop()
