@@ -119,6 +119,7 @@ def get_similarity_score(a, b, threshold=0.6):
     max_y = max(a.bbox[3], b.bbox[3])
     area = max_x*max_y
     minscore = 2
+    similarity_score_list = []
     for kpt_id in range(Pose.num_kpts):
         if a.keypoints[kpt_id, 0] != -1 and b.keypoints[kpt_id, 0] != -1:
             validpoint += 1
@@ -129,12 +130,16 @@ def get_similarity_score(a, b, threshold=0.6):
             # area = max(a.bbox[2] * a.bbox[3], b.bbox[2] * b.bbox[3])
             similarity = np.exp(-distance /
                                 (2 * (area + np.spacing(1)) * Pose.vars[kpt_id]))
+            similarity_score_list.append(similarity)
             if minscore > similarity:
                 minscore = similarity
             similarity_score += 1 if similarity > threshold else similarity
             if similarity > threshold:
                 num_similar_kpt += 1
-    return num_similar_kpt, (similarity_score/validpoint)*100, minscore*100
+    similarity_score_list = sorted(similarity_score_list)
+    similarity_score_list = similarity_score_list[:3]
+    minscoreavg = sum(similarity_score_list)/3
+    return num_similar_kpt, (similarity_score/validpoint)*100, minscoreavg*100
 
 
 def get_similarity(a, b, threshold=0.5):
