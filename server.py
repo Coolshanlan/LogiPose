@@ -1,12 +1,12 @@
 import wx
 import cv2
 from threading import Thread
-from wx.lib.pubsub import pub as Publisher
 import ctypes
 import threading
 import cv2
 import numpy as np
 import torch
+from wx.core import Position
 
 from models.with_mobilenet import PoseEstimationWithMobileNet
 from modules.keypoints import extract_keypoints, group_keypoints
@@ -49,6 +49,20 @@ def infer_fast(net, img, net_input_height_size, stride, upsample_ratio, cpu,
 
     return heatmaps, pafs, scale, pad
 
+class ShowSetting(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        self.SetBackgroundColour((11, 11, 11))
+        self.text1 = wx.StaticText(self, label='Nature', pos=(20,0+20))
+        self.text2 = wx.StaticText(self, label='Nature', pos=(20,100+20))
+        self.text3 = wx.StaticText(self, label='Nature', pos=(20,200+20))
+        font = wx.Font(28, wx.FONTFAMILY_ROMAN, wx.FONTSTYLE_ITALIC, wx.FONTWEIGHT_BOLD, False, 'Arial')
+        self.text1.SetFont(font)
+        self.text1.SetForegroundColour(wx.Colour(255, 0, 0))
+        self.text2.SetFont(font)
+        self.text2.SetForegroundColour(wx.Colour(255, 0, 0))
+        self.text3.SetFont(font)
+        self.text3.SetForegroundColour(wx.Colour(255, 0, 0))
 
 class ShowCapture(wx.Panel):
     def __init__(self, parent, capture, teachermod=0, fps=30):
@@ -81,7 +95,6 @@ class ShowCapture(wx.Panel):
         self.Bind(wx.EVT_CLOSE, self.OnClose)
         if not teachermod:
             self.changebackcolor(1)
-        Publisher.subscribe(lambda self, msg: print(msg), "update")
 
     # def ResizeCapture(self, width, height):
     #     self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
@@ -270,6 +283,7 @@ if __name__ == '__main__':
     mainstudentcap = ShowCapture(frame, capture2)
     secondstudentcap = ShowCapture(frame, capture2)
     thirdstudentcap = ShowCapture(frame, capture)
+    setting = ShowSetting(frame)
 
     frame.Show()
     teachercap.setsize(wx.Size((1280//2.3, 720//2.4)))
@@ -285,7 +299,10 @@ if __name__ == '__main__':
     thirdstudentcap.setposition(
         wx.Point(0+mainstudentcap.Linewidth*2+secondstudentcap.Gettailposition()[0], 0+mainstudentcap.Linewidth*2+secondstudentcap.Gettailposition()[1]+15))
     thirdstudentcap.changebackcolor(0)
+    setting.SetSize(wx.Size((1280//2.3, screen_height-720//2.4)))
+    setting.SetPosition(
+        wx.Point(screen_width-setting.Size[0], 0 + 15))
     cp = threading.Thread(target=caculate_pose)
     cp.start()
 
-app.MainLoop()
+    app.MainLoop()
