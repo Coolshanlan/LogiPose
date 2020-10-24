@@ -1,4 +1,4 @@
-pytorc-openpose
 .vscdoe
 .gitignore
+*.pyc
 __pycache__

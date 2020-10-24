@@ -1,6 +1,6 @@
 import wx 
 from time import sleep
-import cv, cv2 
+import cv2 
 
 class ShowCapture(wx.Panel): 
     def __init__(self, parent, capture, fps=30): 
