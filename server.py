@@ -1,9 +1,5 @@
 import wx
-from time import sleep
 import cv2
-import socket
-import numpy as np
-import _pickle as pickle
 from threading import Thread
 from wx.lib.pubsub import pub as Publisher
 import ctypes
@@ -54,38 +50,8 @@ def infer_fast(net, img, net_input_height_size, stride, upsample_ratio, cpu,
     return heatmaps, pafs, scale, pad
 
 
-class SocketThread(Thread):
-    """Test Worker Thread Class."""
-
-    def __init__(self):
-        """Init Worker Thread Class."""
-        Thread.__init__(self)
-        self.addr = ("localhost", 6000)
-
-    def run(self):
-        """Run Worker Thread."""
-        # This is the code executing in the new thread.
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        server.bind(self.addr)
-        server.listen(10)
-
-        while True:
-            conn, addr = server.accept()
-            clientMessage = str(conn.recv(1024), encoding='utf-8')
-
-            print('Client message is:', clientMessage)
-
-            serverMessage = 'I\'m here!'
-            conn.sendall(serverMessage.encode())
-
-            Publisher.sendMessage, "update", clientMessage
-
-        conn.close()
-
-
 class ShowCapture(wx.Panel):
-    def __init__(self, parent, capture, teachermod=0, fps=10):
+    def __init__(self, parent, capture, teachermod=0, fps=30):
         wx.Panel.__init__(self, parent)
         self.capture = capture
         self.Linewidth = 3
@@ -306,9 +272,6 @@ if __name__ == '__main__':
     thirdstudentcap = ShowCapture(frame, capture)
 
     frame.Show()
-    socketthread = SocketThread()
-    socketthread.setDaemon(True)
-    socketthread.start()
     teachercap.setsize(wx.Size((1280//2.3, 720//2.4)))
     teachercap.setposition(
         wx.Point(screen_width-teachercap.Size[0], screen_height-teachercap.Size[1]-20))
