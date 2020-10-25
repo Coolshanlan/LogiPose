@@ -76,7 +76,7 @@ def get_max_human(humanposes):
     return humanposes[maxindex]
 
 
-def get_similarity_score(a, b, threshold=0.6):
+def get_similarity_score(a, b, threshold=0.4):
     num_similar_kpt = 0
     similarity_score = 0
     validpoint = 0
@@ -139,7 +139,7 @@ def get_similarity_score(a, b, threshold=0.6):
     similarity_score_list = sorted(similarity_score_list)
     similarity_score_list = similarity_score_list[:3]
     minscoreavg = sum(similarity_score_list)/3
-    return num_similar_kpt, (similarity_score/validpoint)*100, minscoreavg*100
+    return num_similar_kpt, (similarity_score/validpoint)*100 if validpoint != 0 else 0, round(minscoreavg*100, 4)
 
 
 def get_similarity(a, b, threshold=0.5):

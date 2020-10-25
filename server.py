@@ -49,14 +49,16 @@ def infer_fast(net, img, net_input_height_size, stride, upsample_ratio, cpu,
 
     return heatmaps, pafs, scale, pad
 
+
 class ShowSetting(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
         self.SetBackgroundColour((11, 11, 11))
-        self.text1 = wx.StaticText(self, label='Nature', pos=(20,0+20))
-        self.text2 = wx.StaticText(self, label='Nature', pos=(20,100+20))
-        self.text3 = wx.StaticText(self, label='Nature', pos=(20,200+20))
-        font = wx.Font(28, wx.FONTFAMILY_ROMAN, wx.FONTSTYLE_ITALIC, wx.FONTWEIGHT_BOLD, False, 'Arial')
+        self.text1 = wx.StaticText(self, label='Nature', pos=(20, 0+20))
+        self.text2 = wx.StaticText(self, label='Nature', pos=(20, 100+20))
+        self.text3 = wx.StaticText(self, label='Nature', pos=(20, 200+20))
+        font = wx.Font(28, wx.FONTFAMILY_ROMAN, wx.FONTSTYLE_ITALIC,
+                       wx.FONTWEIGHT_BOLD, False, 'Arial')
         self.text1.SetFont(font)
         self.text1.SetForegroundColour(wx.Colour(255, 0, 0))
         self.text2.SetFont(font)
@@ -64,12 +66,22 @@ class ShowSetting(wx.Panel):
         self.text3.SetFont(font)
         self.text3.SetForegroundColour(wx.Colour(255, 0, 0))
 
+
+def Panel_change(p1, p2):
+    p1.score, p2.score = p2.score, p1.score
+    p1.username, p2.username = p2.username, p1.username
+
+    p1.capture, p2.capture = p2.capture, p1.capture
+
+
 class ShowCapture(wx.Panel):
-    def __init__(self, parent, capture, teachermod=0, fps=30):
+    def __init__(self, parent, capture, teachermod=0, fps=24, uname=""):
         wx.Panel.__init__(self, parent)
         self.capture = capture
         self.Linewidth = 3
         self.moveerror = 50
+        self.score = 0
+        self.username = uname
         self.teachermod = teachermod
         if not teachermod:
             self.Backpanelred = wx.Panel(parent)
@@ -213,44 +225,65 @@ class ShowCapture(wx.Panel):
             self.Refresh()
 
 
-def caculate_pose(threshold=25):
+def caculate_pose(threshold=30):
+    a = 0
     while(True):
-        mainstudentcap.getPose()
-        secondstudentcap.getPose()
-        thirdstudentcap.getPose()
+        a += 1
         teachercap.getPose()
+        thirdstudentcap.getPose()
+        secondstudentcap.getPose()
+        mainstudentcap.getPose()
+
         if(teachercap.current_pose == None):
             continue
         if(mainstudentcap.current_pose != None):
-            score = get_similarity_score(
+            mainstudentcap.score = get_similarity_score(
                 teachercap.current_pose, mainstudentcap.current_pose)[2]
-            print("first {}".format(score))
-            if score < threshold:
-                mainstudentcap.changebackcolor(0)
-            else:
-                mainstudentcap.changebackcolor(1)
+            # print("first {}".format(score))
         else:
-            mainstudentcap.changebackcolor(0)
+            mainstudentcap.score = 0
         if(secondstudentcap.current_pose != None):
-            score = get_similarity_score(
+            secondstudentcap.score = get_similarity_score(
                 teachercap.current_pose, secondstudentcap.current_pose)[2]
-            print("second {}".format(score))
-            if score < threshold:
-                secondstudentcap.changebackcolor(0)
-            else:
-                secondstudentcap.changebackcolor(1)
+            # print("second {}".format(score))
+
         else:
-            secondstudentcap.changebackcolor(0)
+            secondstudentcap.score = 0
         if(thirdstudentcap.current_pose != None):
-            score = get_similarity_score(
+            thirdstudentcap.score = get_similarity_score(
                 teachercap.current_pose, thirdstudentcap.current_pose)[2]
-            print("thrid {}".format(score))
-            if score < threshold:
-                thirdstudentcap.changebackcolor(0)
-            else:
-                thirdstudentcap.changebackcolor(1)
+            # print("thrid {}".format(score))
+
         else:
+            thirdstudentcap.score = 0
+        if a >= 5:
+            if mainstudentcap.score > secondstudentcap.score:
+                Panel_change(mainstudentcap, secondstudentcap)
+            if mainstudentcap.score > thirdstudentcap.score:
+                Panel_change(mainstudentcap, thirdstudentcap)
+            if secondstudentcap.score > thirdstudentcap.score:
+                Panel_change(secondstudentcap, thirdstudentcap)
+            a = 0
+
+        if mainstudentcap.score < threshold:
+            mainstudentcap.changebackcolor(0)
+        else:
+            mainstudentcap.changebackcolor(1)
+        if secondstudentcap.score < threshold:
+            secondstudentcap.changebackcolor(0)
+        else:
+            secondstudentcap.changebackcolor(1)
+        if thirdstudentcap.score < threshold:
             thirdstudentcap.changebackcolor(0)
+        else:
+            thirdstudentcap.changebackcolor(1)
+
+        setting.text3.SetLabelText("{} : {}".format(
+            mainstudentcap.username, mainstudentcap.score))
+        setting.text2.SetLabelText("{} : {}".format(
+            secondstudentcap.username, secondstudentcap.score))
+        setting.text1.SetLabelText("{} : {}".format(
+            thirdstudentcap.username, thirdstudentcap.score))
 
 
 if __name__ == '__main__':
@@ -261,28 +294,34 @@ if __name__ == '__main__':
     net = net.cuda()
     net = net.eval()
     capture = None
-    capture = cv2.VideoCapture(0)
+    capture = cv2.VideoCapture("data\\HsinDance.mp4")
     capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+    capture4 = cv2.VideoCapture("data\\IronmanDance24.mp4")
+    capture4.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    capture4.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
     screen_width = user32.GetSystemMetrics(0)
     screen_height = user32.GetSystemMetrics(1)
 
-    capture2 = cv2.VideoCapture(2)
+    capture2 = cv2.VideoCapture(0)
     capture2.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     capture2.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-    # capture3 = cv2.VideoCapture(3)
-    # capture3.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    # capture3.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    capture3 = cv2.VideoCapture(2)
+    capture3.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    capture3.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
     app = wx.App()
     frame = wx.Frame(None)
     frame.SetBackgroundColour((255, 250, 240))
     frame.Maximize(True)
-    teachercap = ShowCapture(frame, capture, teachermod=1)
-    mainstudentcap = ShowCapture(frame, capture2)
-    secondstudentcap = ShowCapture(frame, capture2)
-    thirdstudentcap = ShowCapture(frame, capture)
+    teachercap = ShowCapture(frame, capture, teachermod=1, uname="Teacher")
+    mainstudentcap = ShowCapture(frame, capture2, uname="Joey")
+    secondstudentcap = ShowCapture(frame, capture3, uname="Kevin")
+    thirdstudentcap = ShowCapture(frame, capture4, uname="Tom")
+
     setting = ShowSetting(frame)
 
     frame.Show()
@@ -298,7 +337,6 @@ if __name__ == '__main__':
     thirdstudentcap.setsize(wx.Size((1280//3.65, 720//2.7)))
     thirdstudentcap.setposition(
         wx.Point(0+mainstudentcap.Linewidth*2+secondstudentcap.Gettailposition()[0], 0+mainstudentcap.Linewidth*2+secondstudentcap.Gettailposition()[1]+15))
-    thirdstudentcap.changebackcolor(0)
     setting.SetSize(wx.Size((1280//2.3, screen_height-720//2.4)))
     setting.SetPosition(
         wx.Point(screen_width-setting.Size[0], 0 + 15))
